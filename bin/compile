@@ -5,6 +5,7 @@ set -e
 unset GIT_DIR
 
 do_compile() {
+  echo "=====> Compiling $1 $2 $3"
   dir=$(mktemp -t buildpackXXXXX)
   rm -rf $dir
 
