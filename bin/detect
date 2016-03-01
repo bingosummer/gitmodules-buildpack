@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+if [ -f $1/.gitmodules ]; then
+  echo "Gitmodules"
+  exit 0
+else
+  echo "no .gitmodules file"
+  exit 1
+fi

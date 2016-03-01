@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+
+set -e
+
+unset GIT_DIR
+
+do_compile() {
+  dir=$(mktemp -t buildpackXXXXX)
+  rm -rf $dir
+
+  BUILDPACK=$(cat $1/.buildpack)
+  url=${BUILDPACK%#*}
+  branch=${BUILDPACK#*#}
+
+  if [ "$branch" == "$url" ]; then
+    branch=""
+  fi
+
+  if [ "$url" != "" ]; then
+    echo "=====> Downloading Buildpack: $url"
+
+    if [[ "$url" =~ \.tgz$ ]]; then
+      mkdir -p "$dir"
+      curl -s "$url" | tar xvz -C "$dir" >/dev/null 2>&1
+    else
+      git clone $url $dir >/dev/null 2>&1
+      if [ -f "$dir/.gitmodules" ]; then
+        echo "=====> Detected git submodules. Initializing..."
+        (cd $dir && git submodule update --init --recursive)
+      fi
+    fi
+    cd $dir
+
+    if [ "$branch" != "" ]; then
+      git checkout $branch >/dev/null 2>&1
+    fi
+
+    # we'll get errors later if these are needed and don't exist
+    chmod -f +x $dir/bin/{detect,compile,release} || true
+
+    framework=$($dir/bin/detect $1)
+
+    if [ $? == 0 ]; then
+      echo "=====> Detected Framework: $framework"
+      $dir/bin/compile $1 $2 $3
+
+      if [ $? != 0 ]; then
+        exit 1
+      fi
+
+      # check if the buildpack left behind an environment for subsequent ones
+      if [ -e $dir/export ]; then
+        source $dir/export
+      fi
+    fi
+  fi
+}
+
+
+# Compile each submodule
+for module_path in $(grep "path" $1/.gitmodules | awk '{print $3}'); do
+  do_compile $module_path $2 $3
+done
+
+# Compile itself
+do_compile $1 $2 $3
+if [ -x $dir/bin/release ]; then
+  $dir/bin/release $1 > $1/last_pack_release.out
+fi
