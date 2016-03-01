@@ -9,49 +9,51 @@ do_compile() {
   dir=$(mktemp -t buildpackXXXXX)
   rm -rf $dir
 
-  BUILDPACK=$(cat $1/.buildpack)
-  url=${BUILDPACK%#*}
-  branch=${BUILDPACK#*#}
+  if [ -e $1/.buildpack ]; then
+    BUILDPACK=$(cat $1/.buildpack)
+    url=${BUILDPACK%#*}
+    branch=${BUILDPACK#*#}
 
-  if [ "$branch" == "$url" ]; then
-    branch=""
-  fi
-
-  if [ "$url" != "" ]; then
-    echo "=====> Downloading Buildpack: $url"
-
-    if [[ "$url" =~ \.tgz$ ]]; then
-      mkdir -p "$dir"
-      curl -s "$url" | tar xvz -C "$dir" >/dev/null 2>&1
-    else
-      git clone $url $dir >/dev/null 2>&1
-      if [ -f "$dir/.gitmodules" ]; then
-        echo "=====> Detected git submodules. Initializing..."
-        (cd $dir && git submodule update --init --recursive)
-      fi
-    fi
-    cd $dir
-
-    if [ "$branch" != "" ]; then
-      git checkout $branch >/dev/null 2>&1
+    if [ "$branch" == "$url" ]; then
+      branch=""
     fi
 
-    # we'll get errors later if these are needed and don't exist
-    chmod -f +x $dir/bin/{detect,compile,release} || true
+    if [ "$url" != "" ]; then
+      echo "=====> Downloading Buildpack: $url"
 
-    framework=$($dir/bin/detect $1)
+      if [[ "$url" =~ \.tgz$ ]]; then
+        mkdir -p "$dir"
+        curl -s "$url" | tar xvz -C "$dir" >/dev/null 2>&1
+      else
+        git clone $url $dir >/dev/null 2>&1
+        if [ -f "$dir/.gitmodules" ]; then
+          echo "=====> Detected git submodules. Initializing..."
+          (cd $dir && git submodule update --init --recursive)
+        fi
+      fi
+      cd $dir
 
-    if [ $? == 0 ]; then
-      echo "=====> Detected Framework: $framework"
-      $dir/bin/compile $1 $2 $3
-
-      if [ $? != 0 ]; then
-        exit 1
+      if [ "$branch" != "" ]; then
+        git checkout $branch >/dev/null 2>&1
       fi
 
-      # check if the buildpack left behind an environment for subsequent ones
-      if [ -e $dir/export ]; then
-        source $dir/export
+      # we'll get errors later if these are needed and don't exist
+      chmod -f +x $dir/bin/{detect,compile,release} || true
+
+      framework=$($dir/bin/detect $1)
+
+      if [ $? == 0 ]; then
+        echo "=====> Detected Framework: $framework"
+        $dir/bin/compile $1 $2 $3
+
+        if [ $? != 0 ]; then
+          exit 1
+        fi
+
+        # check if the buildpack left behind an environment for subsequent ones
+        if [ -e $dir/export ]; then
+          source $dir/export
+        fi
       fi
     fi
   fi
