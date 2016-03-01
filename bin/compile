@@ -59,7 +59,7 @@ do_compile() {
 
 # Compile each submodule
 for module_path in $(grep "path" $1/.gitmodules | awk '{print $3}'); do
-  do_compile $module_path $2 $3
+  do_compile "$1/$module_path" $2 $3
 done
 
 # Compile itself
