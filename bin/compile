@@ -56,7 +56,7 @@ do_compile() {
         fi
 
         if [ -x $dir/bin/release ]; then
-          $dir/bin/release $1 > $1/last_pack_release.out
+          $dir/bin/release $1 > $1/../last_pack_release.out
         fi
       fi
     fi
@@ -69,5 +69,4 @@ do_compile $1 $2 $3
 # Compile each submodule
 for module_path in $(grep "path" $1/.gitmodules | awk '{print $3}'); do
   do_compile "$1/$module_path" $2 $3
-  cat $1/$module_path/last_pack_release.out > $1/last_pack_release.out
 done
