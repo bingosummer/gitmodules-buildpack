@@ -54,6 +54,11 @@ do_compile() {
         if [ -e $dir/export ]; then
           source $dir/export
         fi
+
+        if [ -x $dir/bin/release ]; then
+          $dir/bin/release $1 > $1/last_pack_release.out
+	  cat $1/last_pack_release.out
+        fi
       fi
     fi
   fi
@@ -67,6 +72,3 @@ done
 
 # Compile itself
 do_compile $1 $2 $3
-if [ -x $dir/bin/release ]; then
-  $dir/bin/release $1 > $1/last_pack_release.out
-fi
