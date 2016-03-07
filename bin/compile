@@ -70,3 +70,5 @@ do_compile $1 $2 $3
 for module_path in $(grep "path" $1/.gitmodules | awk '{print $3}'); do
   do_compile "$1/$module_path" $2 $3
 done
+
+whereis node
